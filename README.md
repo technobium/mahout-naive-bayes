@@ -17,3 +17,4 @@ http://technobium.com/sentiment-analysis-using-mahout-naive-bayes/
 #新增DirectoryFileContentSegment.java  
 1）新增舆情数据预处理部分，在做训练前，先将文本进行中文分词
 2）将舆情文本数据分词后再做bayes 训练测试，文本分类准确率比利用seq2sparse 中的分词器提高5个百分点。
+
