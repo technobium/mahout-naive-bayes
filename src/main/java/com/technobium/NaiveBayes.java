@@ -16,6 +16,7 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ro.RomanianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
@@ -37,7 +38,7 @@ public class NaiveBayes {
 
 	Configuration configuration = new Configuration();
 
-	String inputFilePath = "input/tweets.txt";
+	String inputFilePath = "output/emag/allReviewsClean.txt";
 	String sequenceFilePath = "input/tweets-seq";
 	String labelIndexPath = "input/labelindex";
 	String modelPath = "input/model";
@@ -47,11 +48,13 @@ public class NaiveBayes {
 
 	public static void main(String[] args) throws Throwable {
 		NaiveBayes nb = new NaiveBayes();
-		nb.inputDataToSequenceFile();
-		nb.sequenceFileToSparseVector();
-		nb.trainNaiveBayesModel();
-		nb.classifyNewTweet("Have a nice day!");
+//		nb.inputDataToSequenceFile();
+//		nb.sequenceFileToSparseVector();
+//		nb.trainNaiveBayesModel();
+		nb.classifyNewTweet("Nu e o idee bună");
+
 	}
+
 
 	public void inputDataToSequenceFile() throws Exception {
 		BufferedReader reader = new BufferedReader(
@@ -66,9 +69,22 @@ public class NaiveBayes {
 			String line;
 			while ((line = reader.readLine()) != null) {
 				String[] tokens = line.split("\t");
-				writer.append(new Text("/" + tokens[0] + "/tweet" + count++),
-						new Text(tokens[1]));
+				try {
+					int rating = Integer.valueOf(tokens[0]);
+//					if (rating > 3) {
+//						rating = 1;
+//					} else {
+//						rating = 0;
+//					}
+
+					writer.append(new Text("/" + rating + "/tweet" + count++),
+							new Text(tokens[1]));
+
+				} catch (Exception e) {
+					// Do nothing, skip the current item
+				}
 			}
+			System.out.println("Wrote: " + count);
 		} finally {
 			reader.close();
 			writer.close();
@@ -78,7 +94,7 @@ public class NaiveBayes {
 	void sequenceFileToSparseVector() throws Exception {
 		SparseVectorsFromSequenceFiles svfsf = new SparseVectorsFromSequenceFiles();
 		svfsf.run(new String[] { "-i", sequenceFilePath, "-o", vectorsPath,
-				"-ow" });
+				"-ow", "-ng","3","-a", "org.apache.lucene.analysis.ro.RomanianAnalyzer" }); //"-a", "org.apache.lucene.analysis.ro.RomanianAnalyzer"
 	}
 
 	void trainNaiveBayesModel() throws Exception {
@@ -100,7 +116,7 @@ public class NaiveBayes {
 		Multiset<String> words = ConcurrentHashMultiset.create();
 
 		// Extract the words from the new tweet using Lucene
-		Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_46);
+		Analyzer analyzer = new RomanianAnalyzer(Version.LUCENE_46);
 		TokenStream tokenStream = analyzer.tokenStream("text",
 				new StringReader(tweet));
 		CharTermAttribute termAttribute = tokenStream
